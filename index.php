@@ -2,42 +2,59 @@
 
     require('PHPExcel.php');
 
-    function ExcelPHPParse($file_name) {
-        $Reader = PHPExcel_IOFactory::createReaderForFile($file_name);
-        $Reader->setReadDataOnly(true);
-        $objXLS = $Reader->load($file_name);
-        $objWorksheet = $objXLS->getActiveSheet();
+    if(isset($_POST['submit'])){
+
+        $countfiles = count($_FILES['excel-file']['name']);
 
         $flats = array();
         $columns = array();
+        
+        for($l=0;$l<$countfiles;$l++){
+            $target_dir = "uploads/";
+            $target_file = $target_dir . basename($_FILES["excel-file"]["name"][$l]);
 
-    
-        for ($i = 1; $i <= $objWorksheet->getHighestRow(); $i++) {  
+            if (move_uploaded_file($_FILES["excel-file"]["tmp_name"][$l], $target_file)) {
+                echo "Файл успішно завантажено.\n";
+                
+                $Reader = PHPExcel_IOFactory::createReaderForFile($target_file);
+                $Reader->setReadDataOnly(true);
+                $objXLS = $Reader->load($target_file);
+                $objWorksheet = $objXLS->getActiveSheet();
             
-            $nColumn = PHPExcel_Cell::columnIndexFromString(
-                $objWorksheet->getHighestColumn());
-            
-            for ($j = 0; $j < $nColumn; $j++) {
-                $value = $objWorksheet->getCellByColumnAndRow($j, $i)->getValue();
-                $flat;
-                $explication;
+                for ($i = 1; $i <= $objWorksheet->getHighestRow(); $i++) {  
+                    
+                    $nColumn = PHPExcel_Cell::columnIndexFromString(
+                        $objWorksheet->getHighestColumn());
+                    
+                    for ($j = 0; $j < $nColumn; $j++) {
+                        $value = $objWorksheet->getCellByColumnAndRow($j, $i)->getValue();
+                        $flat;
+                        $explication;
 
-                if($i !== 2) {
-                    if($j===0 && $value) {
-                        $flat = $value;
-                        $flats[$value] = array();
-                    } else if($j===2 && $value) {
-                        $flats[$flat][$value] = "";
-                        $explication = $value;
-                        if(!in_array($value, $columns)) {
-                            $columns[] = $value;
-                        }
-                    } else if($j===3 && $value) {
-                        if(!$flats[$flat][$explication]) {
-                            $flats[$flat][$explication] = $value;
+                        if($i !== 2) {
+                            if($j===0 && $value) {
+                                if(preg_match('/^MZK/', $value) !== 1) {
+                                    $flat = $value;
+                                    $flats[$value] = array();
+                                }
+                            } else if($j===2 && $value) {
+                                $flats[$flat][$value] = "";
+                                $explication = $value;
+                                if(!in_array($value, $columns)) {
+                                    $columns[] = $value;
+                                }
+                            } else if($j===3 && $value) {
+                                if(!$flats[$flat][$explication]) {
+                                    $flats[$flat][$explication] = $value;
+                                }
+                            }
                         }
                     }
                 }
+
+                echo ("Файл створено та записано!\n".$l);
+            } else {
+                echo "Можлива атака за допомогою файлів завантаження!\n";
             }
         }
 
@@ -67,21 +84,6 @@
         $f = fopen("out.csv", "w"); 
         fwrite($f, $res);
         fclose($f);
-
-        echo ("Файл створено та записано!\n");
-    }
-
-    if(isset($_POST['submit'])){
-
-        $target_dir = "uploads/";
-        $target_file = $target_dir . basename($_FILES["excel-file"]["name"]);
-
-        if (move_uploaded_file($_FILES["excel-file"]["tmp_name"], $target_file)) {
-            echo "Файл успішно завантажено.\n";
-            ExcelPHPParse($target_file);
-        } else {
-            echo "Можлива атака за допомогою файлів завантаження!\n";
-        }
     }
 ?>
 
@@ -97,7 +99,7 @@
 
 <body>
     <form method="POST" enctype="multipart/form-data">
-        <input type="file" id="excel-file" name="excel-file">
+        <input type="file" id="excel-file" name="excel-file[]" multiple>
         <input type="submit" value="Пропарсити" name="submit">
     </form>
 </body>
