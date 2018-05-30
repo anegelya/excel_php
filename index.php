@@ -14,7 +14,7 @@
             $target_file = $target_dir . basename($_FILES["excel-file"]["name"][$l]);
 
             if (move_uploaded_file($_FILES["excel-file"]["tmp_name"][$l], $target_file)) {
-                echo "<p>Файл успішно завантажено.\n</p>";
+                echo "<p>Файл номер ".($l+1)." успішно завантажено.\n</p>";
                 
                 $Reader = PHPExcel_IOFactory::createReaderForFile($target_file);
                 $Reader->setReadDataOnly(true);
@@ -81,29 +81,31 @@
                     }
                 }
 
-                echo ("<p>Файл створено та записано!\n</p><p>Кількість файлів: ".($l+1)."</p>");
+                echo ("<p>Файл номер ".($l+1)." додано до таблиці</p>");
             } else {
                 echo "<p>Можлива атака за допомогою файлів завантаження!\n</p>";
             }
         }
 
         $firstTable = makeFirstTable($apparts);
-
-        // Записуємо у файл
-        $fisrtTableFile = fopen("first_table.csv", "w");
-        foreach ($firstTable as $row) {
-            fputcsv($fisrtTableFile, $row);
-        }
-        fclose($fisrtTableFile);
-
         $secondTable = makeSecondTable($apparts);
 
-        // Записуємо у файл
-        $secondTableFile = fopen("second_table.csv", "w");
-        foreach ($secondTable as $row) {
-            fputcsv($secondTableFile, $row);
+        $fileName = strval($_POST['name']);
+
+        writeCSV($firstTable, $fileName, 'first_table');
+        writeCSV($secondTable, $fileName, 'second_table');
+    }
+
+    function writeCSV($table, $fileName, $tableName) {
+        if($file = @fopen($fileName.'_'.$tableName.".csv", "x")) {
+            foreach ($table as $row) {
+                fputcsv($file, $row);
+            }
+            echo('<p>Файл '.$fileName.'_'.$tableName." успішно створено!</p>");
+            fclose($file);
+        } else {
+            echo('<p>Файл із іменем '.$fileName.'_'.$tableName." вже існує. Спробуйте інше ім'я</p>");
         }
-        fclose($secondTableFile);
     }
 
     function makeFirstTable($apparts) {
@@ -181,7 +183,8 @@
 
 <body>
     <form method="POST" enctype="multipart/form-data">
-        <input type="file" id="excel-file" name="excel-file[]" multiple>
+        <input type="file" id="excel-file" name="excel-file[]" multiple required>
+        <input type="name" required name="name" placeholder="Введіть сюди назву файлу">
         <input type="submit" value="Пропарсити" name="submit">
     </form>
 </body>
