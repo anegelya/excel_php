@@ -90,11 +90,20 @@
         $firstTable = makeFirstTable($apparts);
 
         // Записуємо у файл
-        $f = fopen("first_table.csv", "w");
+        $fisrtTableFile = fopen("first_table.csv", "w");
         foreach ($firstTable as $row) {
-            fputcsv($f, $row);
+            fputcsv($fisrtTableFile, $row);
         }
-        fclose($f);
+        fclose($fisrtTableFile);
+
+        $secondTable = makeSecondTable($apparts);
+
+        // Записуємо у файл
+        $secondTableFile = fopen("second_table.csv", "w");
+        foreach ($secondTable as $row) {
+            fputcsv($secondTableFile, $row);
+        }
+        fclose($secondTableFile);
     }
 
     function makeFirstTable($apparts) {
@@ -126,6 +135,34 @@
             );
 
             $table[] = $row;
+        }
+
+        return $table;
+    }
+
+    function makeSecondTable($apparts) {
+        $table = array(
+            array(
+                'Базовий ID',
+                'Код приміщення',
+                'Тип приміщення',
+                'Площа',
+                'Поверх'
+            )
+        );
+
+        foreach ($apparts as $flatId => $flat) {
+            foreach ($flat['rooms'] as $roomId => $room) {
+                $row = array(
+                    $flatId,
+                    $roomId,
+                    $room['name'],
+                    $room['area'],
+                    $room['floor']
+                );
+
+                $table[] = $row;
+            }
         }
 
         return $table;
